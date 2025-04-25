@@ -28,7 +28,8 @@ def draw_shape():
         success, frame = cap.read()
         if not success:
             break
-
+        
+        frame = cv2.flip(frame, 1)
         rgb_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         results = hands.process(rgb_frame)
 
@@ -70,7 +71,63 @@ def draw_shape():
     cv2.destroyAllWindows()
 
 
-def write():
+def write_img():
+    background_img = cv2.imread("C:\\Users\\yuvra\\Desktop\\personal\\badminton zonal winner.jpg") 
+    background_img = cv2.resize(background_img, (640, 480))
+    l1 = []
+    mp_hands = mp.solutions.hands
+    hands = mp_hands.Hands(
+        static_image_mode = False,
+        max_num_hands = 1,
+        min_detection_confidence = 0.5,
+        min_tracking_confidence = 0.5
+    )
+    mp_draw = mp.solutions.drawing_utils
+
+    cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("unable to open camera")
+        exit()
+    
+    while cap.isOpened():
+        success,frame = cap.read()
+        if not success:
+            print("must close camera")
+            break
+    
+        frame = cv2.flip(frame, 1)
+        rgb_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+        results = hands.process(rgb_frame)
+
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
+                h, w, c = frame.shape
+                index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                
+
+                mp_draw.draw_landmarks(
+                    frame,
+                    hand_landmarks,
+                    #mp_hands.HAND_CONNECTIONS
+                )
+
+                key = cv2.waitKey(1)
+                if key == ord('s'):
+                    idx, idy = int(index_tip.x * w), int(index_tip.y * h)
+                    l1.append((idx,idy))
+                
+                for i in l1:
+                    cv2.circle(background_img,(i[0],i[1]),5,(0,0,255),-1)  
+        disp_frame = background_img.copy()     
+        cv2.imshow('finger tracking',disp_frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+def write_cam():
     l1 = []
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
@@ -124,11 +181,12 @@ def write():
     cap.release()
     cv2.destroyAllWindows()
 
-
-choice = int(input("enter 1 to write and 2 to draw lines :"))
+choice = int(input("enter 1 to write on camera, 2 to write on image and 3 to draw lines :"))
 if choice == 1:
-    write()
+    write_cam()
 elif choice == 2:
+    write_img()
+elif choice == 3:
     draw_shape()
 else:
     print("invalid choice")
